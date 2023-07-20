@@ -14,6 +14,7 @@
 const { configure } = require('quasar/wrappers');
 
 module.exports = configure((/* ctx */) => ({
+  supportTS: true,
   eslint: {
     // fix: true,
     // include: [],
@@ -33,6 +34,7 @@ module.exports = configure((/* ctx */) => ({
 
     'axios',
     'supabase',
+    'auth-guard',
   ],
 
   // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#css
@@ -93,7 +95,16 @@ module.exports = configure((/* ctx */) => ({
 
   // https://v2.quasar.dev/quasar-cli-vite/quasar-config-js#framework
   framework: {
-    config: {},
+    plugins: [
+      'Loading',
+    ],
+    config: {
+      loading: {
+        spinnerColor: 'primary',
+        message: 'Loading...',
+        backgroundColor: 'accent',
+      },
+    },
 
     // iconSet: 'material-icons', // Quasar icon set
     // lang: 'en-US', // Quasar language pack

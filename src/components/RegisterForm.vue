@@ -2,12 +2,13 @@
   <div class="q-pa-sm full-width shadow-2" style="max-width: 500px">
     <p class="q-my-lg text-h5 text-weight-bold text-center text-primary">Create an Account</p>
     <q-form
+      ref="form"
       @submit="onSubmit"
       @reset="onReset"
       class="q-gutter-lg row justify-center items-center"
     >
       <q-input
-        v-model="email"
+        v-model="registerData.firstName"
         label="First name *"
         lazy-rules
         dense
@@ -15,7 +16,7 @@
         class="col-5"
       />
       <q-input
-        v-model="email"
+        v-model="registerData.lastName"
         label="Last name *"
         lazy-rules
         dense
@@ -25,7 +26,7 @@
         class="col-5"
       />
       <q-input
-        v-model="email"
+        v-model="registerData.email"
         label="Your E-mail *"
         hint="Valid email address (e.g., example@email.com)"
         lazy-rules
@@ -38,22 +39,20 @@
         class="col-5"
       />
       <q-input
-        v-model="email"
-        label="Your E-mail *"
+        v-model="registerData.username"
+        label="Usersname *"
         hint="Valid email address (e.g., example@email.com)"
         lazy-rules
         dense
         :rules="[
-          (val = '') => val?.length > 0 || 'Please type something',
-          (val = '') => val?.match(re)
-            || 'Should be a valid email address (e.g., example@email.com)'
+          (val = '') => val?.length > 0 || 'Please type something'
         ]"
         class="col-5"
       />
 
       <q-input
         type="password"
-        v-model="password"
+        v-model="registerData.password"
         label="Password"
         lazy-rules
         dense
@@ -64,12 +63,13 @@
       />
       <q-input
         type="password"
-        v-model="password"
+        v-model="passwordRepeat"
         label="Password"
         lazy-rules
         dense
         :rules="[
-          val => val !== null && val !== '' || 'This field i required'
+          val => val !== null && val !== '' || 'This field i required',
+          val => val === registerData.password || 'Passwords should be equal'
         ]"
         class="col-5"
       />
@@ -99,20 +99,40 @@
 
 <script setup lang="ts">
 import { useUserAuthStore } from 'stores/user-store';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
-const { login } = useUserAuthStore();
+const { register } = useUserAuthStore();
 
-const accept = ref(false);
-const password = ref('');
-const email = ref('');
+const registerData = ref({
+  email: '',
+  password: '',
+  firstName: '',
+  lastName: '',
+  username: '',
+});
+
+const passwordRepeat = ref('');
+
+const form = ref(null);
+
+const fullName = computed(() => `${registerData.value.firstName} ${registerData.value.lastName}`);
 
 // eslint-disable-next-line no-useless-escape
 const re = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i;
 
 const onSubmit = async () => {
-  const data = { email: email.value, password: password.value };
-  await login(data);
+  await form?.value?.validate().then(async (success: boolean) => {
+    if (success) {
+      await register({
+        email: registerData.value.email,
+        password: registerData.value.password,
+        options: {
+          fullName: fullName.value,
+          username: registerData.value.username,
+        },
+      });
+    }
+  });
 };
 const onReset = () => console.log('RESET');
 

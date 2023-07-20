@@ -3,7 +3,6 @@
     <p class="q-mb-lg text-h5 text-weight-bold text-center text-primary">Welcome back!</p>
     <q-form
       @submit="onSubmit"
-      @reset="onReset"
       class="q-gutter-md"
     >
       <q-input
@@ -58,9 +57,10 @@
 <script setup lang="ts">
 import { useUserAuthStore } from 'stores/user-store';
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 const { login } = useUserAuthStore();
-
+const router = useRouter();
 const accept = ref(false);
 const password = ref('');
 const email = ref('');
@@ -70,8 +70,7 @@ const re = /^(([^<>()[\]\.,;:\s@\"]+(\.[^<>()[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>
 
 const onSubmit = async () => {
   const data = { email: email.value, password: password.value };
-  await login(data);
+  const result = await login(data);
+  if (result) router.push('/');
 };
-const onReset = () => console.log('RESET');
-
 </script>

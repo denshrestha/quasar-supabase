@@ -1,3 +1,5 @@
+/* eslint-disable camelcase */
+/* eslint-disable no-underscore-dangle */
 import { boot } from 'quasar/wrappers';
 import axios, { AxiosInstance } from 'axios';
 
@@ -14,14 +16,41 @@ declare module '@vue/runtime-core' {
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-const token = localStorage.getItem('token') || '';
+const token = localStorage.getItem('access_token') || '';
 
 const api = axios.create({
   baseURL: 'https://api.example.com' || 'http://localhost:3001',
   headers: {
     Authorization: `Bearer ${token}`,
+    Accept: 'application/json',
+    'Content-Type': 'application/x-www-form-urlencoded',
   },
 });
+
+api.interceptors.request.use(
+  (config) => {
+    const accessToken = localStorage.getItem('access_token');
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
+    }
+    return config;
+  },
+  (error) => {
+    Promise.reject(error);
+  },
+);
+
+// api.interceptors.response.use((response) => response, async (error) => {
+//   const originalRequest = error.config;
+//   if (error.response.status === 403 && !originalRequest._retry) {
+//     // eslint-disable-next-line no-underscore-dangle
+//     originalRequest._retry = true;
+//     const access_token = await refreshAccessToken();
+//     axios.defaults.headers.common.Authorization = `Bearer ${access_token}`;
+//     return axiosApiInstance(originalRequest);
+//   }
+//   return Promise.reject(error);
+// });
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

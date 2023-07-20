@@ -1,42 +1,98 @@
+/* eslint-disable camelcase */
 import { defineStore } from 'pinia';
-import useSupabase from 'boot/supabase';
 import { computed, ref } from 'vue';
-import { Provider, SignInWithPasswordCredentials, SignUpWithPasswordCredentials } from '@supabase/supabase-js';
+import {
+  Provider,
+  Session,
+  SignInWithPasswordCredentials,
+  SignUpWithPasswordCredentials,
+  User,
+  UserAttributes,
+} from '@supabase/supabase-js';
+import { AuthService } from '../services';
 
-export const useUserAuthStore = defineStore('counter', () => {
-  const { supabase } = useSupabase();
+type DetaResponceType = {
+  user: User | null,
+  session: Session | null
+}
+type OAuthDataResponceType = {
+  provider: Provider
+  url: string
+}
 
-  const user = ref(null);
+export const useUserAuthStore = defineStore('userAuth', () => {
+  // STATE
+  const user = ref<User | null>(null);
+  const provider = ref<Provider | null>(null);
+  const session = ref<Omit<Session, 'user'> | null>(null);
 
+  // GETTERS
   const getUser = computed(() => user.value);
 
-  const isLoggedIn = computed(() => !!user.value);
+  const getSession = computed(() => session.value);
+
+  const isLoggedIn = computed(() => !!getUser.value && !!getSession.value);
+
+  // ACTIONS
+  function $reset() {
+    user.value = null;
+    provider.value = null;
+    session.value = null;
+  }
+
+  const setSession = async ({ access_token, refresh_token } : {
+    access_token: string;
+    refresh_token: string;
+  }) => {
+    const {
+      user: userData,
+      session: sessionData,
+    } = await AuthService.setSession({ access_token, refresh_token });
+
+    session.value = sessionData;
+    user.value = userData;
+  };
 
   const login = async ({ email, password }: SignInWithPasswordCredentials) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    const {
+      user: userData,
+      session: sessionData,
+    }: DetaResponceType = await AuthService.login({ email, password });
+
+    session.value = { ...sessionData };
+    user.value = { ...userData };
+
+    setSession({
+      access_token: sessionData.access_token,
+      refresh_token: sessionData.refresh_token,
     });
 
-    if (error) throw error;
-    return data;
+    return !!session.value && !!user.value;
   };
 
   const loginWithSocialProvider = async (providerValue: Provider) => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: providerValue,
-    });
-    if (error) throw error;
-    return data;
+    const {
+      provider: providerData,
+    }: OAuthDataResponceType = await AuthService.loginWithSocialProvider(providerValue);
+
+    provider.value = providerData;
+
+    return true;
   };
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    const status = await AuthService.logout();
+
+    if (status) $reset();
+
+    return status;
   };
 
   const register = async ({ email, password, ...options }: SignUpWithPasswordCredentials) => {
-    const { data, error } = await supabase.auth.signUp(
+    const {
+      user: userData = null,
+      session: sessionData = null,
+    }: DetaResponceType = await AuthService.register(
       {
         email,
         password,
@@ -48,27 +104,29 @@ export const useUserAuthStore = defineStore('counter', () => {
       },
     );
 
-    if (error) throw error;
-    return data;
+    session.value = sessionData;
+    user.value = userData;
+
+    return !!session.value && !!user.value;
   };
 
-  const update = async (payload: any) => {
-    const { data, error } = await supabase.auth.updateUser(payload);
-
-    if (error) throw error;
-    return data;
-  };
+  // eslint-disable-next-line no-return-await
+  const update = async (payload: UserAttributes) => await AuthService.update(payload);
 
   const sendPasswordRestEmail = async (email: string) => {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email);
-
-    if (error) throw error;
+    const data = await AuthService.sendPasswordRestEmail(email);
     return data;
+  };
+
+  const getSessionUser = async () => {
+    user.value = await AuthService.getSessionUser();
+    console.log('🚀 ~ file: user-store.ts:123 ~ getSessionUser ~ user:', user.value);
   };
 
   return {
     user,
     getUser,
+    getSession,
     login,
     loginWithSocialProvider,
     isLoggedIn,
@@ -76,5 +134,6 @@ export const useUserAuthStore = defineStore('counter', () => {
     update,
     sendPasswordRestEmail,
     logout,
+    getSessionUser,
   };
 });
