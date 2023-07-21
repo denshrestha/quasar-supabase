@@ -40,7 +40,7 @@
         rounded
         color="primary"
         class="col-12"
-         />
+        />
         <q-btn
         label="Register"
         color="primary"
@@ -48,18 +48,17 @@
         rounded
         to="/auth/register"
         class="q-mt-sm col-12"
-         />
+        />
       </div>
     </q-form>
-
   </div>
 </template>
 <script setup lang="ts">
-import { useUserAuthStore } from 'stores/user-store';
+import { useAuthStore } from 'stores/auth-store';
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
-const { login } = useUserAuthStore();
+const { login } = useAuthStore();
 const router = useRouter();
 const accept = ref(false);
 const password = ref('');

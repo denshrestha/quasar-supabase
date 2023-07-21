@@ -1,26 +1,11 @@
 <template>
   <q-layout view="lHh Lpr lFf">
-    <q-header elevated>
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
-
-        <q-toolbar-title>
-          Quasar App
-        </q-toolbar-title>
-
-        <div>Quasar v{{ $q.version }}</div>
-      </q-toolbar>
-    </q-header>
-
+    <header-component
+      :user="me"
+      @toggle-left-drawer="toggleLeftDrawer"
+    />
     <q-drawer
-      v-model="leftDrawerOpen"
+      v-model="drawer"
       show-if-above
       bordered
       mini
@@ -47,33 +32,26 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
-import { QSpinnerGears, useQuasar } from 'quasar';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { useUserAuthStore } from '../stores/user-store';
+import HeaderComponent from 'components/layout/HeaderComponent.vue';
+import { useUserStore } from '../stores/user-store';
+import { useAuthStore } from '../stores/auth-store';
 
-const $q = useQuasar();
-console.log('🚀 ~ file: MainLayout.vue:56 ~ q:', $q);
-const router = useRouter();
-const store = useUserAuthStore();
-const { getUser } = storeToRefs(store);
+const userStore = useUserStore();
+const authStore = useAuthStore();
+const { getUser: user } = storeToRefs(userStore);
+const { getUser } = storeToRefs(authStore);
 
-if (!getUser.value) {
-  $q.loading.show({
-    spinner: QSpinnerGears,
-    spinnerColor: 'red',
-    messageColor: 'black',
-    backgroundColor: 'yellow',
-    message: 'Updated message',
-  });
-  await store.getSessionUser();
-  $q.loading?.hide();
-}
-if (!getUser.value) router.push('/auth');
-const leftDrawerOpen = ref(false);
+const me = computed(() => user.value);
+const userData = computed(() => getUser.value);
+
+if (userData.value) await userStore.getMe(userData.value.id);
+
+console.log('🚀 ~ file: MainLayout.vue:44 ~ user:', user.value);
+const drawer = ref(false);
 
 function toggleLeftDrawer() {
-  leftDrawerOpen.value = !leftDrawerOpen.value;
+  drawer.value = !drawer.value;
 }
 </script>

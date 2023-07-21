@@ -1,20 +1,24 @@
 import { boot } from 'quasar/wrappers';
-// import { useUserAuthStore } from '../stores/user-store';
+import { useAuthStore } from '../stores/auth-store';
 
 export default boot(({ router, store, redirect }) => {
-  // const {
-  //   getSessionUser,
-  //   isLoggedIn,
-  // } = useUserAuthStore(store);
-  // console.log('🚀 ~ file: auth-guard.ts:8 ~ boot ~ isLoggedIn:', isLoggedIn);
+  const authStore = useAuthStore(store);
 
   router.beforeEach(async (to, from, next) => {
-    // if (!to.path.includes('/auth')) {
-    //   if (!isLoggedIn) {
-    //     await getSessionUser();
-    //     redirect('/auth');
-    //   }
-    // }
+    if (!to.path.includes('/auth')) {
+      if (!authStore.getUser) {
+        await authStore.getSessionUser()
+          .then(async () => {
+            if (!authStore.getUser) {
+              redirect('/auth');
+            }
+            await authStore.updateSessionData();
+          })
+          .catch(() => {
+            redirect('/auth');
+          });
+      }
+    }
     next();
   });
 });

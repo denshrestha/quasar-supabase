@@ -11,10 +11,11 @@ import {
   UserResponse,
 } from '@supabase/supabase-js';
 import useSupabase from 'boot/supabase';
+import { IAuthService } from '../interfaces';
 
 const { supabase } = useSupabase();
 
-class AuthService {
+class AuthService implements IAuthService {
   api: SupabaseClient;
 
   constructor(api: SupabaseClient) {
@@ -69,11 +70,11 @@ class AuthService {
   }
 
   async getSession() {
-    const { data, error } = await this.api.auth.getSession();
+    const { data: { session }, error } = await this.api.auth.getSession();
 
     if (error) throw error;
 
-    return data;
+    return session;
   }
 
   async setSession(
